@@ -1973,6 +1973,20 @@ Chinchillas_Collectibles.chinchilla -> Chinchillas.id`,
 				tassert.Equal(t, 2, *g.Edges[0].SrcTableColumnIndex)
 			},
 		},
+		{
+			name: "quoted-reserved",
+			text: `"3d": {
+	"width": hello
+	'multiple'
+	'layers': yes
+}
+"3d"."width" -> me
+a."style"
+`,
+			assertions: func(t *testing.T, g *d2graph.Graph) {
+				tassert.Equal(t, 7, len(g.Objects))
+			},
+		},
 	}
 
 	for _, tc := range testCases {
