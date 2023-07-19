@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"runtime/debug"
@@ -13,10 +14,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"oss.terrastruct.com/d2/d2ast"
 	"oss.terrastruct.com/d2/d2chaos"
 	"oss.terrastruct.com/d2/d2compiler"
 	"oss.terrastruct.com/d2/d2exporter"
+	"oss.terrastruct.com/d2/d2format"
 	"oss.terrastruct.com/d2/d2layouts/d2dagrelayout"
+	"oss.terrastruct.com/d2/d2oracle"
 	"oss.terrastruct.com/d2/lib/log"
 	"oss.terrastruct.com/d2/lib/textmeasure"
 )
@@ -102,11 +106,6 @@ func test(t *testing.T, textPath, text string) {
 		t.Fatal(err)
 	}
 
-	g, err := d2compiler.Compile("", strings.NewReader(text), nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	t.Run("layout", func(t *testing.T) {
 		defer func() {
 			r := recover()
@@ -114,7 +113,10 @@ func test(t *testing.T, textPath, text string) {
 				t.Errorf("recovered layout engine panic: %#v\n%s", r, debug.Stack())
 			}
 		}()
-
+		g, err := d2compiler.Compile("", strings.NewReader(text), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
 		ctx := log.WithTB(context.Background(), t, nil)
 
 		ruler, err := textmeasure.NewRuler()
@@ -131,6 +133,110 @@ func test(t *testing.T, textPath, text string) {
 		_, err = d2exporter.Export(ctx, g, nil)
 		if err != nil {
 			t.Fatal(err)
+		}
+	})
+	// In a random order, delete every object one by one
+	t.Run("d2oracle.Delete", func(t *testing.T) {
+		g, err := d2compiler.Compile("", strings.NewReader(text), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		key := ""
+		var lastAST *d2ast.Map
+		defer func() {
+			r := recover()
+			if r != nil {
+				t.Errorf("recovered d2oracle panic deleting %s: %#v\n%s\n%s", key, r, debug.Stack(), d2format.Format(lastAST))
+			}
+		}()
+		rand.Shuffle(len(g.Objects), func(i, j int) {
+			g.Objects[i], g.Objects[j] = g.Objects[j], g.Objects[i]
+		})
+		for _, obj := range g.Objects {
+			key = obj.AbsID()
+			lastAST = g.AST
+			g, err = d2oracle.Delete(g, key)
+			if err != nil {
+				t.Fatal(fmt.Errorf("Failed to delete %s in\n%s\n: %v", key, d2format.Format(lastAST), err))
+			}
+		}
+	})
+	// In a random order, move every nested object one level up
+	t.Run("d2oracle.MoveOut", func(t *testing.T) {
+		g, err := d2compiler.Compile("", strings.NewReader(text), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		key := ""
+		var lastAST *d2ast.Map
+		defer func() {
+			r := recover()
+			if r != nil {
+				t.Errorf("recovered d2oracle panic moving out %s: %#v\n%s\n%s", key, r, debug.Stack(), d2format.Format(lastAST))
+			}
+		}()
+		rand.Shuffle(len(g.Objects), func(i, j int) {
+			g.Objects[i], g.Objects[j] = g.Objects[j], g.Objects[i]
+		})
+		for _, obj := range g.Objects {
+			if obj.Parent == obj.Graph.Root {
+				continue
+			}
+			key = obj.AbsID()
+			lastAST = g.AST
+			g, err = d2oracle.Move(g, key, obj.Parent.AbsID()+"."+obj.ID)
+			if err != nil {
+				t.Fatal(fmt.Errorf("Failed to move %s in\n%s\n: %v", key, d2format.Format(lastAST), err))
+			}
+		}
+	})
+	// In a random order, move an object into another object
+	t.Run("d2oracle.MoveIn", func(t *testing.T) {
+		g, err := d2compiler.Compile("", strings.NewReader(text), nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, obj := range g.Objects {
+			if obj.Attributes.Shape.Value == "sequence_diagram" {
+				return
+			}
+		}
+		containerKey := ""
+		key := ""
+		var lastAST *d2ast.Map
+		defer func() {
+			r := recover()
+			if r != nil {
+				t.Errorf("recovered d2oracle panic moving %s into %s: %#v\n%s\n%s", key, containerKey, r, debug.Stack(), d2format.Format(lastAST))
+			}
+		}()
+	OUTER:
+		for i := 1; i < len(g.Objects); i++ {
+			g, err := d2compiler.Compile("", strings.NewReader(text), nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			rand.Shuffle(len(g.Objects), func(i, j int) {
+				g.Objects[i], g.Objects[j] = g.Objects[j], g.Objects[i]
+			})
+			obj := g.Objects[1]
+			container := g.Objects[0]
+			if obj == container || obj.Parent == container {
+				continue
+			}
+			// Skip ancestors of the container chosen
+			for curr := container; curr != nil; curr = curr.Parent {
+				if curr == obj {
+					continue OUTER
+				}
+			}
+			key = obj.AbsID()
+			containerKey = container.AbsID()
+			lastAST = g.AST
+			_, err = d2oracle.Move(g, key, containerKey+"."+obj.ID)
+			if err != nil {
+				t.Fatal(fmt.Errorf("Failed to move %s into %s in\n%s\n: %v", key, containerKey, d2format.Format(lastAST), err))
+			}
 		}
 	})
 }
