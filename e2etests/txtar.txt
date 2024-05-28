@@ -455,3 +455,13 @@ bob -> alice: The ability to play bridge or\ngolf as if they were games.
 ◎: |md
   ◎ foo bar
 |
+
+
+-- link-on-connections --
+a: {
+  link: https://twitter.com
+}
+
+a <-> b: {
+  link: https://google.com
+}
