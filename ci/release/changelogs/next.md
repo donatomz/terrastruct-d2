@@ -16,6 +16,9 @@
 - Globs: Filters work with default values (e.g. `&opacity: 1` will capture everything without opacity explicitly set) [#2090](https://github.com/terrastruct/d2/pull/2090)
 - Render: connection label fills have a bit of padding and border-radius for better aesthetics [#2094](https://github.com/terrastruct/d2/pull/2094)
 - Sequence diagram: the padding between message labels and message endpoints are slightly increased [#2096](https://github.com/terrastruct/d2/pull/2096)
+- Opacity 0 shapes no longer have a label mask which made any segment of connections going through them lower opacity [#1940](https://github.com/terrastruct/d2/pull/1940)
+- Bidirectional connections are now animated in opposite directions rather than one direction [#1939](https://github.com/terrastruct/d2/pull/1939)
+- Connections now support `link` in SVGs [#1955](https://github.com/terrastruct/d2/pull/1955)
 
 #### Bugfixes ⛑️
 
