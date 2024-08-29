@@ -30,6 +30,7 @@ var LightCatalog = []d2themes.Theme{
 var DarkCatalog = []d2themes.Theme{
 	DarkMauve,
 	DarkFlagshipTerrastruct,
+	DarkBerryBlue,
 }
 
 func Find(id int64) d2themes.Theme {

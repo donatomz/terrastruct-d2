@@ -11,6 +11,9 @@
 - Sequence diagram: The spacing between self-referential edges and regular edges is uniform [#2043](https://github.com/terrastruct/d2/pull/2043)
 - Compiler: Error on multi-line labels in `sql_table` shapes [#2057](https://github.com/terrastruct/d2/pull/2057)
 - Sequence diagram: Image shape actors can use spans and notes [#2056](https://github.com/terrastruct/d2/issues/2056)
+- Themes [#2065](https://github.com/terrastruct/d2/pull/2065):
+  - new theme `Dark Berry Blue` (`205`), intended as dark variant of `Mixed Berry Blue` (`5`).
+  - changed id of `Dark Flagship Terrastruct` (`203`) to mirror the ID of `Flagship Terrastruct` (`3`), improving theme discoverability.
 
 #### Bugfixes ⛑️
 
